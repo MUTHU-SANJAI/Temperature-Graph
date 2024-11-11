@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5-Day Weather Forecast</title>
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+</head>
+<body>
+<header>
+<nav>
+<a href="index.html">Home</a>
+<a href="catalog.html">Shop</a>
+<a href="register.html">Register</a>
+<a href="login.html">Login</a>
+<a href="weather.html">Weather</a>
+</nav>
+</header>
+<main>
+<div class="container">
+<h2>5-Day Weather Forecast</h2>
+<input type="text" id="cityInput" placeholder="Enter city name">
+<button id="getWeatherBtn">Get Weather</button>
+<p id="error-message" style="color: red;"></p>
+<canvas id="weatherChart" width="400" height="200"></canvas>
+</div>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+   const cityInput = document.getElementById('cityInput');
+   const getWeatherBtn = document.getElementById('getWeatherBtn');
+   const errorMessage = document.getElementById('error-message');
+   const apiKey = '5f4a36bbb4bde001f0488785f1b0cf01'; // OpenWeather API key
+
+   // Fetches 5-day forecast weather data from the OpenWeather API
+   const fetchWeatherForecast = async (city) => {
+      try {
+         const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`);
+         if (!response.ok) throw new Error('City not found');
+         const data = await response.json();
+         return data.list.map(item => ({
+            temp: item.main.temp,
+            dateTime: item.dt_txt
+         }));
+      } catch (error) {
+         throw error;
+      }
+   };
+
+   // Display weather forecast in chart
+   const displayWeatherForecast = async () => {
+      const city = cityInput.value.trim();
+      if (!city) {
+         errorMessage.innerText = 'Please enter a city name.';
+         return;
+      }
+      try {
+         errorMessage.innerText = '';
+         const forecastData = await fetchWeatherForecast(city);
+         updateChart(forecastData);
+      } catch (error) {
+         errorMessage.innerText = error.message;
+      }
+   };
+
+   getWeatherBtn.addEventListener('click', displayWeatherForecast);
+
+   // Update the chart with fetched data
+   const updateChart = (forecastData) => {
+      const ctx = document.getElementById('weatherChart').getContext('2d');
+      const labels = forecastData.map(item => item.dateTime);
+      const temperatures = forecastData.map(item => item.temp);
+
+      const chartData = {
+         labels: labels,
+         datasets: [{
+            label: 'Temperature (°C)',
+            data: temperatures,
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 2,
+            fill: false
+         }]
+      };
+
+      // Destroy previous chart instance if it exists
+      if (window.chart) {
+         window.chart.destroy();
+      }
+
+      // Create new chart instance
+      window.chart = new Chart(ctx, {
+         type: 'line',
+         data: chartData,
+         options: {
+            scales: {
+               x: {
+                  type: 'time',
+                  time: {
+                     unit: 'day',
+                     tooltipFormat: 'MMM dd, hA'
+                  },
+                  title: {
+                     display: true,
+                     text: 'Date & Time'
+                  }
+               },
+               y: {
+                  beginAtZero: false,
+                  title: {
+                     display: true,
+                     text: 'Temperature (°C)'
+                  }
+               }
+            }
+         }
+      });
+   };
+});
+</script>
+</body>
+</html>
